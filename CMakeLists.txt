@@ -13,15 +13,8 @@ set(STREAMER_SANITIZER "" CACHE STRING "Sanitizer to enable: address, thread, or
 
 find_package(Threads REQUIRED)
 
-add_library(streamer src/AssetSource.cpp src/AssetManager.cpp src/Png.cpp src/TileWorld.cpp)
-target_include_directories(streamer PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
-target_link_libraries(streamer PUBLIC Threads::Threads)
-if(MSVC)
-  target_compile_options(streamer PRIVATE /W4)
-else()
-  target_compile_options(streamer PRIVATE -Wall -Wextra -Wpedantic)
-endif()
-
+# Must come BEFORE the first add_library/add_executable: add_compile_options only affects targets created
+# after it, and a sanitizer that skips the library only sees half of the program.
 if(STREAMER_SANITIZER AND NOT MSVC)
   if(STREAMER_SANITIZER STREQUAL "thread")
     set(_san -fsanitize=thread)
@@ -30,6 +23,16 @@ if(STREAMER_SANITIZER AND NOT MSVC)
   endif()
   add_compile_options(${_san} -fno-omit-frame-pointer -g)
   add_link_options(${_san})
+endif()
+
+
+add_library(streamer src/AssetSource.cpp src/AssetManager.cpp src/Png.cpp src/TileWorld.cpp)
+target_include_directories(streamer PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_link_libraries(streamer PUBLIC Threads::Threads)
+if(MSVC)
+  target_compile_options(streamer PRIVATE /W4)
+else()
+  target_compile_options(streamer PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 
 add_executable(frame_benchmark src/frame_benchmark.cpp)

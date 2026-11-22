@@ -42,10 +42,8 @@ jobs:
           - { sanitizer: address, os: ubuntu-latest, experimental: false }
           # Required: ThreadSanitizer on Ubuntu 24.04 (GCC 13), where the suite is clean.
           - { sanitizer: thread, os: ubuntu-24.04, experimental: false }
-          # Informational: the newest image (GCC 15). Its shared_ptr release path reads both reference
-          # counts with one 8-byte load, and TSan reports the object's destruction on the last-owner thread
-          # as a race even though every earlier use is ordered by the counts. Kept so it shows up if the
-          # toolchain or TSan changes.
+          # Informational: the newest image (GCC 15), a newer toolchain than the one this suite was developed
+          # against. Non-blocking so a toolchain quirk cannot hide a real result on the pinned one.
           - { sanitizer: thread, os: ubuntu-latest, experimental: true }
     steps:
       - uses: actions/checkout@v4
