@@ -90,6 +90,8 @@ Sandbox results (2 vCPUs, 2 worker threads, 3,200 requests over 200 textures, ca
 
 Promotion: with 200 loads queued, the last-queued texture is ready after 309 ms if left at Low priority, but after 6 ms when re-requested at High.
 
+> **CI note on ThreadSanitizer.** TSan is a required check on Ubuntu 24.04 (GCC 13). On the newest runner image (Ubuntu 26.04, GCC 15.2) it reports data races in almost every test that passes a result between threads through `std::future` or `std::shared_ptr`, including tests that only call `request().get()` sequentially. All of those reports end inside libstdc++'s future and reference-count hand-off, so they look like TSan missing that synchronization on this toolchain and not defects in the project; that job is kept as non-blocking so the situation stays visible. If you build with GCC 15 and want a clean TSan run, `std::future` would be the thing to replace with a mutex/condition-variable shared state.
+
 ## Tests
 
 65 GoogleTest cases, also run under AddressSanitizer/UBSan and ThreadSanitizer in CI:

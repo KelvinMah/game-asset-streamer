@@ -31,10 +31,23 @@ jobs:
           path: demo*.bmp
 
   sanitizers:
-    runs-on: ubuntu-latest
+    name: sanitizers (${{ matrix.sanitizer }}, ${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    # An "experimental" entry reports its result without turning the whole run red.
+    continue-on-error: ${{ matrix.experimental }}
     strategy:
+      fail-fast: false # one sanitizer failing must not cancel the others
       matrix:
-        sanitizer: [address, thread]
+        include:
+          - { sanitizer: address, os: ubuntu-latest, experimental: false }
+          # ThreadSanitizer is a required check on Ubuntu 24.04 (GCC 13), the toolchain the suite was
+          # verified on. On the newest image (Ubuntu 26.04, GCC 15) TSan reports hundreds of races that
+          # all sit in libstdc++'s std::future / std::shared_ptr hand-off, even in tests that just call
+          # request().get() three times, which is a sign of the tool not seeing those synchronizations
+          # rather than a bug in this code. It stays here as an informational job so a real regression
+          # or a fixed toolchain would show up.
+          - { sanitizer: thread, os: ubuntu-24.04, experimental: false }
+          - { sanitizer: thread, os: ubuntu-latest, experimental: true }
     steps:
       - uses: actions/checkout@v4
       - name: Configure
