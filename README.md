@@ -1,6 +1,6 @@
 # Multithreaded Asset Streaming System
 
-[![CI](https://github.com/<you>/<repo>/actions/workflows/ci.yml/badge.svg)](https://github.com/<you>/<repo>/actions/workflows/ci.yml)
+[![CI](https://github.com/KelvinMah/game-asset-streamer/actions/workflows/ci.yml/badge.svg)](https://github.com/KelvinMah/game-asset-streamer/actions/workflows/ci.yml)
 
 A C++17 asset streaming library plus a demo that flies over a 4096x2560 px world of 640 **real PNG tiles**. Files are read and decoded on worker threads (with a PNG decoder written from scratch), cached in a byte-budgeted LRU, and uploaded to the GPU on the render thread as they arrive. A live overlay shows that the main thread stays responsive.
 
