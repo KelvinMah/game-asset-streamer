@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install SDL2
+        run: sudo apt-get update && sudo apt-get install -y libsdl2-dev
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Build
+        run: cmake --build build --parallel
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+      - name: Benchmark smoke test
+        run: ./build/stream_benchmark --requests 320 --repeats 1 --latency-us 0
+      - name: Frame-time benchmark smoke test
+        run: ./build/frame_benchmark --seconds 3 --modes sync,reactive,predictive --speed 2
+      - name: Run the demo headless and capture a frame
+        run: |
+          SDL_VIDEODRIVER=dummy ./build/asset_demo --assets demo_assets --screenshot demo.bmp --frames 240
+          SDL_VIDEODRIVER=dummy ./build/asset_demo --assets demo_assets --sync --screenshot demo_sync.bmp --frames 240
+      - uses: actions/upload-artifact@v4
+        with:
+          name: demo-screenshots
+          path: demo*.bmp
+
+  sanitizers:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        sanitizer: [address, thread]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        run: >
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo
+          -DSTREAMER_SANITIZER=${{ matrix.sanitizer }} -DSTREAMER_BUILD_DEMO=OFF
+      - name: Build
+        run: cmake --build build --parallel
+      - name: Test under ${{ matrix.sanitizer }} sanitizer
+        run: ctest --test-dir build --output-on-failure
