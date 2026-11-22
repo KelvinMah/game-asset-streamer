@@ -457,7 +457,7 @@ TEST(Cancel, ARequestAfterCancellationStartsAFreshLoad) {
 
 TEST(Cancel, RaceBetweenCancelAndWorkerClaimResolvesExactlyOnce) {
     // Each load is either cancelled or completed, never both and never twice (a double
-    // set_value/set_exception on the promise would throw std::future_error and abort the run).
+    // set_value/set_exception on the promise would throw std::logic_error and abort the run).
     constexpr int Rounds = 1500;
     auto source = std::make_shared<CountingSource>();
     AssetManager m(source, {2, 1 << 22});

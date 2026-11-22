@@ -1,6 +1,7 @@
 #pragma once
 
 #include "streamer/AssetSource.hpp"
+#include "streamer/Future.hpp"
 #include "streamer/LruCache.hpp"
 #include "streamer/ThreadPool.hpp"
 
@@ -9,7 +10,6 @@
 #include <deque>
 #include <exception>
 #include <functional>
-#include <future>
 #include <memory>
 #include <mutex>
 #include <stdexcept>
@@ -20,7 +20,7 @@
 namespace streamer {
 
 using AssetPtr = std::shared_ptr<const Asset>;
-using AssetFuture = std::shared_future<AssetPtr>;
+using AssetFuture = SharedFuture<AssetPtr>;
 
 // Named priorities; any int works, higher runs first.
 namespace priority {
@@ -107,7 +107,7 @@ public:
 private:
     using Clock = std::chrono::steady_clock;
     struct LoadState {
-        std::promise<AssetPtr> promise;
+        Promise<AssetPtr> promise;
         std::atomic<bool> claimed{false}; // set by the first worker that starts this load
         Clock::time_point queuedAt = Clock::now();
     };

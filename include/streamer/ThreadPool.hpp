@@ -1,10 +1,11 @@
 #pragma once
 
+#include "streamer/Future.hpp"
+
 #include <condition_variable>
 #include <cstddef>
 #include <cstdint>
 #include <functional>
-#include <future>
 #include <mutex>
 #include <queue>
 #include <stdexcept>
@@ -33,14 +34,26 @@ public:
     // Queues `fn`. Exceptions thrown by `fn` are delivered through the returned future.
     // Throws std::runtime_error if the pool has been shut down.
     template <class F>
-    auto submit(int priority, F&& fn) -> std::future<std::invoke_result_t<std::decay_t<F>>> {
+    auto submit(int priority, F&& fn) -> SharedFuture<std::invoke_result_t<std::decay_t<F>>> {
         using R = std::invoke_result_t<std::decay_t<F>>;
-        auto task = std::make_shared<std::packaged_task<R()>>(std::forward<F>(fn));
-        std::future<R> result = task->get_future();
+        auto promise = std::make_shared<Promise<R>>();
+        SharedFuture<R> result = promise->future();
+        auto task = [promise, fn = std::decay_t<F>(std::forward<F>(fn))]() mutable {
+            try {
+                if constexpr (std::is_void_v<R>) {
+                    fn();
+                    promise->set_value();
+                } else {
+                    promise->set_value(fn());
+                }
+            } catch (...) {
+                promise->set_exception(std::current_exception());
+            }
+        };
         {
             std::lock_guard<std::mutex> lock(mutex_);
             if (stopping_) throw std::runtime_error("ThreadPool is shut down");
-            queue_.push(Task{priority, nextSequence_++, [task] { (*task)(); }});
+            queue_.push(Task{priority, nextSequence_++, std::move(task)});
         }
         wake_.notify_one();
         return result;

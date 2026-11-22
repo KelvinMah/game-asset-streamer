@@ -14,15 +14,15 @@ using namespace streamer;
 namespace {
 // Holds the pool's only worker busy so later submissions queue up and ordering is observable.
 struct Gate {
-    std::promise<void> release;
+    Promise<void> release;
     std::atomic<bool> started{false};
-    std::shared_future<void> wait = release.get_future().share();
+    SharedFuture<void> wait = release.future();
 };
 } // namespace
 
 TEST(ThreadPool, RunsTasksAndReturnsValues) {
     ThreadPool pool(3);
-    std::vector<std::future<int>> results;
+    std::vector<SharedFuture<int>> results;
     for (int i = 0; i < 50; ++i) results.push_back(pool.submit(0, [i] { return i * i; }));
     for (int i = 0; i < 50; ++i) EXPECT_EQ(results[i].get(), i * i);
 }

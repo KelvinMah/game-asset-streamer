@@ -42,15 +42,15 @@ AssetFuture AssetManager::requestImpl(const std::string& path, int priority, Cal
     if (AssetPtr cached = cache_.get(path)) {
         lock.unlock();
         ++hits_;
-        std::promise<AssetPtr> ready;
+        Promise<AssetPtr> ready;
         ready.set_value(cached);
         if (onDone) pushCompletion(std::move(onDone), Result{path, cached, nullptr});
-        return ready.get_future().share();
+        return ready.future();
     }
 
     // 3. Start a load.
     auto state = std::make_shared<LoadState>();
-    AssetFuture future = state->promise.get_future().share();
+    AssetFuture future = state->promise.future();
     Inflight& entry = inflight_[path];
     entry.future = future;
     entry.state = state;
